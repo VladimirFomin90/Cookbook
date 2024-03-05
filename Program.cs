@@ -1,14 +1,19 @@
 ﻿
-var cookbookApp = new CookbookApp();
+
+var cookbookApp = new CookbookApp(
+    new RecipeRepository(),
+    new RecipeConsoleUserInput());
 
 cookbookApp.Run();
 
 public class CookbookApp
 {
-    private readonly RecipeRepository _recipeRepository;
-    private readonly RecipeUserInput _recipeUserInput;
+    private readonly IRecipeRepository _recipeRepository;
+    private readonly IRecipeUserInput _recipeUserInput;
 
-    public CookbookApp(RecipeRepository _recipeRepository, RecipeUserInput _recipeUserInput)
+    public CookbookApp(
+        IRecipeRepository recipeRepository,
+        IRecipeUserInput recipeUserInput)
     {
         _recipeRepository = recipeRepository;
         _recipeUserInput = recipeUserInput;
@@ -41,10 +46,31 @@ public class CookbookApp
     }
 }
 
-public class RecipeUserInput
+public interface IRecipeUserInput
 {
+    void ShowMessage(string message);
+    void Exit();
 }
 
-public class RecipeRepository
+public class RecipeConsoleUserInput : IRecipeUserInput
+{
+    public void ShowMessage(string message)
+    {
+        Console.WriteLine(message);
+    }
+    public void Exit()
+    {
+        Console.WriteLine("Нажмите любую кнопку для закрытия");
+        Console.ReadLine();
+    }
+
+}
+
+public interface IRecipeRepository
+{
+
+}
+
+public class RecipeRepository : IRecipeRepository
 {
 }
