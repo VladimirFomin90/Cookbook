@@ -1,10 +1,10 @@
-﻿
+﻿using Cookbook.Recipe;
 
 var cookbookApp = new CookbookApp(
     new RecipeRepository(),
     new RecipeConsoleUserInput());
 
-cookbookApp.Run();
+cookbookApp.Run("recipe.txt");
 
 public class CookbookApp
 {
@@ -19,7 +19,7 @@ public class CookbookApp
         _recipeUserInput = recipeUserInput;
     }
 
-    public void Run()
+    public void Run(string filePath)
     {
         var allRecipe = _recipeRepository.Read(filePath);
         _recipeUserInput.PrintExistRecipe(allRecipe);
@@ -50,6 +50,13 @@ public interface IRecipeUserInput
 {
     void ShowMessage(string message);
     void Exit();
+
+    void PrintExistRecipe(IEnumerable<Recipe> allRecipe)
+    {
+        if (allRecipe.Count() > 0)
+        {
+        }
+    }
 }
 
 public class RecipeConsoleUserInput : IRecipeUserInput
@@ -58,19 +65,50 @@ public class RecipeConsoleUserInput : IRecipeUserInput
     {
         Console.WriteLine(message);
     }
+
     public void Exit()
     {
         Console.WriteLine("Нажмите любую кнопку для закрытия");
         Console.ReadLine();
     }
 
+    public void PrintExistRecipe(IEnumerable<Recipe> allRecipe)
+    {
+        if (allRecipe.Count() > 0)
+        {
+            Console.WriteLine("Существуют рецепты:" + Environment.NewLine);
+
+            for (int recipeIndex = 0; recipeIndex < allRecipe.Count(); recipeIndex++)
+            {
+                Console.WriteLine($"*****{recipeIndex + 1}*****");
+                Console.WriteLine(allRecipe[recipeIndex]);
+                Console.WriteLine();
+            }
+        }
+    }
 }
 
 public interface IRecipeRepository
 {
-
+    List<Recipe> Read(string filePath);
 }
 
 public class RecipeRepository : IRecipeRepository
 {
+    public List<Recipe> Read(string filePath)
+    {
+        return new List<Recipe>
+        {
+            new(new List<Ingredient>
+            {
+                new Sugar(),
+                new Flour()
+            }),
+            new(new List<Ingredient>(
+            {
+                new Cinnamon(),
+                new Water()
+            })
+        };
+    }
 }
