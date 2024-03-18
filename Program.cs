@@ -26,23 +26,23 @@ public class CookbookApp
 
         _recipeUserInput.CreateRecipe();
 
-        // var ingredient = _recipeUserInput.ReadIngredientFromUser();
-        //
-        // if (ingredient.Count > 0)
-        // {
-        //     var recipe = new Recipe(ingredient);
-        //     allRecipe.AddRecipe(recipe);
-        //     _recipeRepository.Save(filePath, allRecipe);
-        //
-        //     _recipeUserInput.ShowMessage("Рецепт добавлен:");
-        //     _recipeUserInput.ShowMessage(recipe.ToString());
-        // }
-        // else
-        // {
-        //     _recipeUserInput.ShowMessage("Не были выбраны ингредиенты");
-        // }
-        //
-        // _recipeUserInput.Exit();
+        var ingredient = _recipeUserInput.ReadIngredientFromUser();
+
+        if (ingredient.Count() > 0)
+        {
+            var recipe = new Recipe(ingredient);
+            allRecipe.Add(recipe);
+            // _recipeRepository.Write(filePath, allRecipe);
+
+            _recipeUserInput.ShowMessage("Рецепт добавлен:");
+            _recipeUserInput.ShowMessage(recipe.ToString());
+        }
+        else
+        {
+            _recipeUserInput.ShowMessage("Не были выбраны ингредиенты");
+        }
+
+        _recipeUserInput.Exit();
     }
 }
 
@@ -59,6 +59,7 @@ public interface IRecipeUserInput
     }
 
     void CreateRecipe();
+    IEnumerable<Ingredient> ReadIngredientFromUser();
 }
 
 public class IngredientRegister
@@ -72,6 +73,19 @@ public class IngredientRegister
         new Chocolate(),
         new Water()
     };
+
+    public Ingredient GetById(int id)
+    {
+        foreach (var ingredient in All)
+        {
+            if (ingredient.Id == id)
+            {
+                return ingredient;
+            }
+        }
+
+        return null;
+    }
 }
 
 public class RecipeConsoleUserInput : IRecipeUserInput
@@ -117,10 +131,36 @@ public class RecipeConsoleUserInput : IRecipeUserInput
         Console.WriteLine("Создание нового рецепта " +
                           "Доступные ингредиенты:");
 
-        foreach (var ingredient in _ingredientRegister.All)
+        foreach (var ingredient in _ingredientRegister.All) Console.WriteLine(ingredient);
+    }
+
+    public IEnumerable<Ingredient> ReadIngredientFromUser()
+    {
+        var shallStop = false;
+        var ingredient = new List<Ingredient>();
+
+        while (!shallStop)
         {
-            Console.WriteLine(ingredient);
+            Console.WriteLine("Добавь ингридиент по номеру");
+
+            var userInput = Console.ReadLine();
+
+            if (int.TryParse(userInput, out int id))
+            {
+                var selectedIngredient = _ingredientRegister.GetById(id);
+
+                if (selectedIngredient is not null)
+                {
+                    ingredient.Add(selectedIngredient);
+                }
+            }
+            else
+            {
+                shallStop = true;
+            }
         }
+
+        return ingredient;
     }
 }
 
