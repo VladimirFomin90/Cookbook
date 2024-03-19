@@ -1,7 +1,7 @@
 ﻿using Cookbook.Recipe;
 
 var cookbookApp = new CookbookApp(
-    new RecipeRepository(),
+    new RecipeRepository(new StringTextualRepository(), new IngredientRegister()),
     new RecipeConsoleUserInput(new IngredientRegister()));
 
 cookbookApp.Run("recipe.txt");
@@ -32,7 +32,7 @@ public class CookbookApp
         {
             var recipe = new Recipe(ingredient);
             allRecipe.Add(recipe);
-            // _recipeRepository.Write(filePath, allRecipe);
+            _recipeRepository.Write(filePath, allRecipe);
 
             _recipeUserInput.ShowMessage("Рецепт добавлен:");
             _recipeUserInput.ShowMessage(recipe.ToString());
@@ -62,15 +62,21 @@ public interface IRecipeUserInput
     IEnumerable<Ingredient> ReadIngredientFromUser();
 }
 
-public class IngredientRegister
+public interface IIngredientRegister
+{
+    IEnumerable<Ingredient> All { get; }
+    Ingredient GetById(int id);
+}
+
+public class IngredientRegister : IIngredientRegister
 {
     public IEnumerable<Ingredient> All { get; } = new List<Ingredient>
     {
-        new Flour(),
-        new Sugar(),
+        new Chocolate(),
         new Cinnamon(),
         new Dough(),
-        new Chocolate(),
+        new Flour(),
+        new Sugar(),
         new Water()
     };
 
@@ -90,9 +96,9 @@ public class IngredientRegister
 
 public class RecipeConsoleUserInput : IRecipeUserInput
 {
-    private readonly IngredientRegister _ingredientRegister;
+    private readonly IIngredientRegister _ingredientRegister;
 
-    public RecipeConsoleUserInput(IngredientRegister ingredientRegister)
+    public RecipeConsoleUserInput(IIngredientRegister ingredientRegister)
     {
         _ingredientRegister = ingredientRegister;
     }
@@ -128,7 +134,7 @@ public class RecipeConsoleUserInput : IRecipeUserInput
 
     public void CreateRecipe()
     {
-        Console.WriteLine("Создание нового рецепта " +
+        Console.WriteLine("Создание нового рецепта. " +
                           "Доступные ингредиенты:");
 
         foreach (var ingredient in _ingredientRegister.All) Console.WriteLine(ingredient);
@@ -145,14 +151,11 @@ public class RecipeConsoleUserInput : IRecipeUserInput
 
             var userInput = Console.ReadLine();
 
-            if (int.TryParse(userInput, out int id))
+            if (int.TryParse(userInput, out var id))
             {
                 var selectedIngredient = _ingredientRegister.GetById(id);
 
-                if (selectedIngredient is not null)
-                {
-                    ingredient.Add(selectedIngredient);
-                }
+                if (selectedIngredient is not null) ingredient.Add(selectedIngredient);
             }
             else
             {
@@ -167,24 +170,89 @@ public class RecipeConsoleUserInput : IRecipeUserInput
 public interface IRecipeRepository
 {
     List<Recipe> Read(string filePath);
+    void Write(string filePath, List<Recipe> allRecipe);
 }
 
 public class RecipeRepository : IRecipeRepository
 {
+    private readonly StringTextualRepository _stringTextualRepository;
+    private readonly IIngredientRegister _ingredientRegister;
+
+    public RecipeRepository(StringTextualRepository stringTextualRepository, IIngredientRegister ingredientRegister)
+    {
+        _stringTextualRepository = stringTextualRepository;
+        _ingredientRegister = ingredientRegister;
+    }
+
     public List<Recipe> Read(string filePath)
     {
-        return new List<Recipe>
+        var recipesFromFile = _stringTextualRepository.Read(filePath);
+        var recipes = new List<Recipe>();
+
+        foreach (var recipeFromFile in recipesFromFile)
         {
-            new(new List<Ingredient>
-            {
-                new Sugar(),
-                new Flour()
-            }),
-            new(new List<Ingredient>
-            {
-                new Cinnamon(),
-                new Water()
-            })
-        };
+            var recipe = RecipeFromString(recipeFromFile);
+            recipes.Add(recipe);
+        }
+
+        return recipes;
+    }
+
+    private Recipe RecipeFromString(string recipeFromFile)
+    {
+        var textIds = recipeFromFile.Split(",");
+        var ingredients = new List<Ingredient>();
+
+        foreach (var textId in textIds)
+        {
+            var id = int.Parse(textId);
+            var ingredient = _ingredientRegister.GetById(id);
+            ingredients.Add(ingredient);
+        }
+
+        return new Recipe(ingredients);
+    }
+
+    public void Write(string filePath, List<Recipe> allRecipe)
+    {
+        var recipeAsString = new List<string>();
+
+        foreach (var recipe in allRecipe)
+        {
+            var allId = new List<int>();
+
+            foreach (var ingredient in recipe.Ingredients) allId.Add(ingredient.Id);
+
+            recipeAsString.Add(string.Join(",", allId));
+        }
+
+        _stringTextualRepository.Write(filePath, recipeAsString);
+    }
+}
+
+internal interface IStringRepository
+{
+    List<string> Read(string filePath);
+    void Write(string filePath, List<string> strings);
+}
+
+public class StringTextualRepository : IStringRepository
+{
+    private static readonly string Separator = Environment.NewLine;
+
+    public List<string> Read(string filePath)
+    {
+        if (File.Exists(filePath))
+        {
+            var fileContent = File.ReadAllText(filePath);
+            return fileContent.Split(Separator).ToList();
+        }
+
+        return new List<string>();
+    }
+
+    public void Write(string filePath, List<string> strings)
+    {
+        File.WriteAllText(filePath, string.Join(Separator, strings));
     }
 }
