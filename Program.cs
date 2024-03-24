@@ -1,10 +1,23 @@
-﻿using Cookbook.Recipe;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
+using Cookbook.Recipe;
+
+const FileFormat Format = FileFormat.Json;
+
+IStringRepository stringRepository =
+    Format == FileFormat.Json ? new StringJsonRepository() : new StringTextualRepository();
 
 var cookbookApp = new CookbookApp(
-    new RecipeRepository(new StringTextualRepository(), new IngredientRegister()),
+    new RecipeRepository(stringRepository, new IngredientRegister()),
     new RecipeConsoleUserInput(new IngredientRegister()));
 
-cookbookApp.Run("recipe.txt");
+cookbookApp.Run("recipe.json");
+
+public enum FileFormat
+{
+    Json,
+    Txt
+}
 
 public class CookbookApp
 {
@@ -83,12 +96,8 @@ public class IngredientRegister : IIngredientRegister
     public Ingredient GetById(int id)
     {
         foreach (var ingredient in All)
-        {
             if (ingredient.Id == id)
-            {
                 return ingredient;
-            }
-        }
 
         return null;
     }
@@ -175,18 +184,18 @@ public interface IRecipeRepository
 
 public class RecipeRepository : IRecipeRepository
 {
-    private readonly StringTextualRepository _stringTextualRepository;
+    private readonly IStringRepository _iStringRepository;
     private readonly IIngredientRegister _ingredientRegister;
 
-    public RecipeRepository(StringTextualRepository stringTextualRepository, IIngredientRegister ingredientRegister)
+    public RecipeRepository(IStringRepository iStringRepository, IIngredientRegister ingredientRegister)
     {
-        _stringTextualRepository = stringTextualRepository;
+        _iStringRepository = iStringRepository;
         _ingredientRegister = ingredientRegister;
     }
 
     public List<Recipe> Read(string filePath)
     {
-        var recipesFromFile = _stringTextualRepository.Read(filePath);
+        var recipesFromFile = _iStringRepository.Read(filePath);
         var recipes = new List<Recipe>();
 
         foreach (var recipeFromFile in recipesFromFile)
@@ -226,11 +235,11 @@ public class RecipeRepository : IRecipeRepository
             recipeAsString.Add(string.Join(",", allId));
         }
 
-        _stringTextualRepository.Write(filePath, recipeAsString);
+        _iStringRepository.Write(filePath, recipeAsString);
     }
 }
 
-internal interface IStringRepository
+public interface IStringRepository
 {
     List<string> Read(string filePath);
     void Write(string filePath, List<string> strings);
@@ -254,5 +263,24 @@ public class StringTextualRepository : IStringRepository
     public void Write(string filePath, List<string> strings)
     {
         File.WriteAllText(filePath, string.Join(Separator, strings));
+    }
+}
+
+public class StringJsonRepository : IStringRepository
+{
+    public List<string> Read(string filePath)
+    {
+        if (File.Exists(filePath))
+        {
+            var fileContent = File.ReadAllText(filePath);
+            return JsonSerializer.Deserialize<List<string>>(fileContent);
+        }
+
+        return new List<string>();
+    }
+
+    public void Write(string filePath, List<string> strings)
+    {
+        File.WriteAllText(filePath, JsonSerializer.Serialize(strings));
     }
 }
