@@ -7,11 +7,34 @@ const FileFormat Format = FileFormat.Json;
 IStringRepository stringRepository =
     Format == FileFormat.Json ? new StringJsonRepository() : new StringTextualRepository();
 
+const string FileName = "recipes";
+var fileMetadata = new FileMetadata(FileName, Format);
+
 var cookbookApp = new CookbookApp(
     new RecipeRepository(stringRepository, new IngredientRegister()),
     new RecipeConsoleUserInput(new IngredientRegister()));
 
-cookbookApp.Run("recipe.json");
+cookbookApp.Run(fileMetadata.ToPath());
+
+public class FileMetadata
+{
+    public FileMetadata(string name, FileFormat format)
+    {
+        Name = name;
+        Format = format;
+    }
+
+    public string Name { get; }
+    public FileFormat Format { get; }
+
+    public string ToPath() => $"{Name}.{Format.AsFileExtension()}";
+}
+
+public static class FileFormatExtension
+{
+    public static string AsFileExtension(this FileFormat fileFormat) =>
+        fileFormat == FileFormat.Json ? "json" : "txt";
+}
 
 public enum FileFormat
 {
