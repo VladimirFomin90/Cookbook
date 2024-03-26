@@ -1,5 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
+using Cookbook.DataAccess;
+using Cookbook.FileAccess;
 using Cookbook.Recipe;
 
 const FileFormat Format = FileFormat.Json;
@@ -15,32 +17,6 @@ var cookbookApp = new CookbookApp(
     new RecipeConsoleUserInput(new IngredientRegister()));
 
 cookbookApp.Run(fileMetadata.ToPath());
-
-public class FileMetadata
-{
-    public FileMetadata(string name, FileFormat format)
-    {
-        Name = name;
-        Format = format;
-    }
-
-    public string Name { get; }
-    public FileFormat Format { get; }
-
-    public string ToPath() => $"{Name}.{Format.AsFileExtension()}";
-}
-
-public static class FileFormatExtension
-{
-    public static string AsFileExtension(this FileFormat fileFormat) =>
-        fileFormat == FileFormat.Json ? "json" : "txt";
-}
-
-public enum FileFormat
-{
-    Json,
-    Txt
-}
 
 public class CookbookApp
 {
@@ -259,51 +235,5 @@ public class RecipeRepository : IRecipeRepository
         }
 
         _iStringRepository.Write(filePath, recipeAsString);
-    }
-}
-
-public interface IStringRepository
-{
-    List<string> Read(string filePath);
-    void Write(string filePath, List<string> strings);
-}
-
-public class StringTextualRepository : IStringRepository
-{
-    private static readonly string Separator = Environment.NewLine;
-
-    public List<string> Read(string filePath)
-    {
-        if (File.Exists(filePath))
-        {
-            var fileContent = File.ReadAllText(filePath);
-            return fileContent.Split(Separator).ToList();
-        }
-
-        return new List<string>();
-    }
-
-    public void Write(string filePath, List<string> strings)
-    {
-        File.WriteAllText(filePath, string.Join(Separator, strings));
-    }
-}
-
-public class StringJsonRepository : IStringRepository
-{
-    public List<string> Read(string filePath)
-    {
-        if (File.Exists(filePath))
-        {
-            var fileContent = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize<List<string>>(fileContent);
-        }
-
-        return new List<string>();
-    }
-
-    public void Write(string filePath, List<string> strings)
-    {
-        File.WriteAllText(filePath, JsonSerializer.Serialize(strings));
     }
 }
