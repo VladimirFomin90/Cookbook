@@ -128,15 +128,13 @@ public class RecipeConsoleUserInput : IRecipeUserInput
         {
             Console.WriteLine("Существуют рецепты:" + Environment.NewLine);
 
-            var counter = 1;
+            var allRecipesAsStrings = allRecipe
+                .Select((recipe, index) =>
+                    $@"*****{index + 1}***** 
+{recipe}");
 
-            foreach (var recipe in allRecipe)
-            {
-                Console.WriteLine($"*****{counter}*****");
-                Console.WriteLine(recipe);
-                Console.WriteLine();
-                ++counter;
-            }
+            Console.WriteLine(string.Join(Environment.NewLine, allRecipesAsStrings));
+            Console.WriteLine();
         }
     }
 
@@ -145,7 +143,7 @@ public class RecipeConsoleUserInput : IRecipeUserInput
         Console.WriteLine("Создание нового рецепта. " +
                           "Доступные ингредиенты:");
 
-        foreach (var ingredient in _ingredientRegister.All) Console.WriteLine(ingredient);
+        Console.WriteLine(string.Join(Environment.NewLine, _ingredientRegister.All));
     }
 
     public IEnumerable<Ingredient> ReadIngredientFromUser()
