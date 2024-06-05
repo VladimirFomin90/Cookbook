@@ -94,11 +94,15 @@ public class IngredientRegister : IIngredientRegister
 
     public Ingredient GetById(int id)
     {
-        foreach (var ingredient in All)
-            if (ingredient.Id == id)
-                return ingredient;
+        var AllOfIngredientsId = All
+            .Where(ingredient => ingredient.Id == id);
 
-        return null;
+        if (AllOfIngredientsId.Count() > 1)
+        {
+            throw new InvalidOperationException($"Есть уже такой ингредиент с таким id");
+        }
+
+        return AllOfIngredientsId.FirstOrDefault();
     }
 }
 
